@@ -17,6 +17,11 @@ resource "google_project_service" "gcp_resource_manager_api" {
   service = "cloudresourcemanager.googleapis.com"
 }
 
+resource "google_project_service" "gcp_service_usage_api" {
+  project = var.project_id
+  service = "serviceusage.googleapis.com"
+}
+
 resource "time_sleep" "gcp_wait_crm_api_enabling" {
   depends_on = [
     google_project_service.gcp_resource_manager_api
