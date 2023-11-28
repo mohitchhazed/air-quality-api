@@ -26,31 +26,31 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 # Function to get air quality data from API
-def fetch_air_quality():
-    url = 'https://api.waqi.info/feed/stuttgart/?token={os.environ.get("API_TOKEN")}'
+def fetch_and_store():
+    def fetch_and_store():
+    url = f'https://api.waqi.info/feed/stuttgart/?token={os.environ.get("API_TOKEN")}'
     response = requests.get(url)
-    data = response.json()
+    try:
+        data = response.json()
+    except ValueError as e:
+        print(f"Error parsing JSON: {e}")
+        return
 
     if 'data' in data:
-        return data['data']['aqi'], datetime.utcnow()
-    else:
-        return None, None
+        aqi = data['data']['aqi']
+        time_updated = datetime.utcnow()
 
-# Endpoint to fetch and store air quality data every 15 minutes
-@app.route('/fetch-and-store')
-def fetch_and_store():
-    aqi, time_updated = fetch_air_quality()
-    if aqi is not None and time_updated is not None:
-        new_data = AirQuality(city='Stuttgart', aqi=aqi, time_updated=time_updated)
+        new_data = AirQuality(aqi=aqi, time_updated=time_updated)
         session.add(new_data)
         session.commit()
-        return 'Data fetched and stored successfully'
+
+        print('Data fetched and stored successfully.')
     else:
-        return 'Failed to fetch data'
+        print('Failed to fetch data or invalid data format.')
 
 # Scheduler to fetch and store data every 15 minutes
 scheduler = BackgroundScheduler()
-scheduler.add_job(fetch_and_store, 'interval', minutes=1)
+scheduler.add_job(fetch_and_store, 'interval', minutes=15)
 scheduler.start()
 
 # Endpoint to get current AQI and last update time
