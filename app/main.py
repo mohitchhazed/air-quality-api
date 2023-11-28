@@ -27,7 +27,6 @@ session = Session()
 
 # Function to get air quality data from API
 def fetch_and_store():
-    def fetch_and_store():
     url = f'https://api.waqi.info/feed/stuttgart/?token={os.environ.get("API_TOKEN")}'
     response = requests.get(url)
     try:

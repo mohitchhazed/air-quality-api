@@ -8,6 +8,9 @@ resource "google_cloud_run_service" "air-quality" {
     spec {
       containers {
         image = "${var.region}-docker.pkg.dev/${var.project_id}/${var.repository}/${var.docker_image}"
+        ports {
+          container_port = 5000
+        }
         resources {
           limits = {
             cpu    = "2"
