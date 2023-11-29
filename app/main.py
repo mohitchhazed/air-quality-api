@@ -4,6 +4,7 @@ import requests
 from sqlalchemy import create_engine, Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from apscheduler.schedulers.background import BackgroundScheduler
 import os
 
 app = Flask(__name__)
@@ -50,6 +51,11 @@ def fetch_and_store():
         return 'Data fetched and stored successfully'
     else:
         return 'Failed to fetch data'
+
+# Scheduler to fetch and store data every 15 minutes
+scheduler = BackgroundScheduler()
+scheduler.add_job(fetch_and_store, 'interval', minutes=15)
+scheduler.start()
 
 # Endpoint to get current AQI and last update time
 @app.route('/aqi')
