@@ -4,7 +4,6 @@ import requests
 from sqlalchemy import create_engine, Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from apscheduler.schedulers.background import BackgroundScheduler
 import os
 
 app = Flask(__name__)
@@ -26,7 +25,7 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 # Function to get air quality data from API
-def fetch_and_store():
+def fetch_air_quality():
     url = f'https://api.waqi.info/feed/stuttgart/?token={os.environ.get("API_TOKEN")}'
     response = requests.get(url)
     try:
@@ -34,23 +33,23 @@ def fetch_and_store():
     except ValueError as e:
         print(f"Error parsing JSON: {e}")
         return
-
+    
     if 'data' in data:
-        aqi = data['data']['aqi']
-        time_updated = datetime.utcnow()
+        return data['data']['aqi'], datetime.utcnow()
+    else:
+        return None, None
 
-        new_data = AirQuality(aqi=aqi, time_updated=time_updated)
+# Endpoint to fetch and store air quality data every 15 minutes
+@app.route('/fetch-and-store')
+def fetch_and_store():
+    aqi, time_updated = fetch_air_quality()
+    if aqi is not None and time_updated is not None:
+        new_data = AirQuality(city='Stuttgart', aqi=aqi, time_updated=time_updated)
         session.add(new_data)
         session.commit()
-
-        print('Data fetched and stored successfully.')
+        return 'Data fetched and stored successfully'
     else:
-        print('Failed to fetch data or invalid data format.')
-
-# Scheduler to fetch and store data every 15 minutes
-scheduler = BackgroundScheduler()
-scheduler.add_job(fetch_and_store, 'interval', minutes=15)
-scheduler.start()
+        return 'Failed to fetch data'
 
 # Endpoint to get current AQI and last update time
 @app.route('/aqi')
@@ -87,4 +86,3 @@ def refresh_aqi():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
